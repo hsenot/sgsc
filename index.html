@@ -57,6 +57,19 @@
               data: {results:data,text:'id'},
               formatSelection: format,
               formatResult: format
+            }).on('change',function(val,added,removed){
+              // Loading the data for customer_key in val.val
+              $.ajax({
+                type: "GET",
+                data:{
+                  customer_key:val.val
+                },
+                url: "ws/ws_get_interval_reading_by_customer_key.php",
+                dataType: "json",
+                success: function(data) {
+                  //processData(data);
+                }
+              });              
             });
           }
         }
