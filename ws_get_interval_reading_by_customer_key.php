@@ -14,7 +14,7 @@
 		$p_customer_key = $_REQUEST['customer_key'];
 
 		$sql = <<<ENDSQL
-	select day as d,prd as p,kwh1 as k1,kwh2 as k2,kwh3 as k3, kwh4 as k4 from interval_reading_mini where customer_key=$p_customer_key
+	select day as d,prd as p,kwh1 as k1,kwh2 as k2,kwh3 as k3, kwh4 as k4 from interval_reading_mini where customer_key=$p_customer_key order by 1,2
 ENDSQL;
 
 		//echo $sql;
