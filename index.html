@@ -17,7 +17,66 @@
     <![endif]-->
 
     <!-- Select2 -->
-    <link href="select2-3.5.1/select2.css" rel="stylesheet"/>
+    <link href="select2-3.5.1/select2.css" rel="stylesheet">
+    <!-- Gridster.js -->
+    <link href="gridster.js/dist/jquery.gridster.css" rel="stylesheet">
+    <style>
+      .gridster * {
+        margin:0;
+        padding:0;
+      }
+
+      ul {
+        list-style-type: none;
+      }
+
+      body {
+          font-size: 16px;
+          font-family: 'Helvetica Neue', Arial, sans-serif;
+          color: #444;
+          margin: 30px 40px;
+      }
+
+      .controls {
+          margin-bottom: 20px;
+      }
+
+      .gridster ul {
+          background-color: #EFEFEF;
+      }
+
+      .gridster li {
+          font-size: 1em;
+          font-weight: bold;
+          text-align: center;
+          line-height: 100%;
+      }
+
+      .gridster {
+          margin: 0 auto;
+          opacity: .8;
+          -webkit-transition: opacity .6s;
+          -moz-transition: opacity .6s;
+          -o-transition: opacity .6s;
+          -ms-transition: opacity .6s;
+          transition: opacity .6s;
+      }
+
+      .gridster .gs-w {
+          background: #DDD;
+          cursor: pointer;
+      }
+
+      .gridster .player {
+          background: #BBB;
+      }
+
+
+      .gridster .preview-holder {
+          border: none!important;
+          background: red!important;
+      }
+    </style>
 
   </head>
   <body>
@@ -26,17 +85,50 @@
       <input type='hidden' id="e1" style="width:300px;margin:10px;font-size:18px;"/>
     </div>
 
+    <div class="gridster">
+        <ul>
+        </ul>
+    </div>
+
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="bootstrap-3.2.0/js/bootstrap.min.js"></script>
     <!-- Select2 -->
     <script src="select2-3.5.1/select2.js"></script>
+    <!-- Gridster -->
+    <script src="gridster.js/dist/jquery.gridster.js"></script>
     <script>
+      var gridster;
+
+      // same object than generated with gridster.serialize() method
+      var serialization = [
+        {col: 1,row: 1,size_x: 2,size_y: 2},
+        {col: 3,row: 1,size_x: 1,size_y: 2},
+        {col: 4,row: 1,size_x: 1,size_y: 1},
+        {col: 2,row: 3,size_x: 3,size_y: 1},
+        {col: 1,row: 4,size_x: 1,size_y: 1},
+        {col: 1,row: 3,size_x: 1,size_y: 1},
+        {col: 2,row: 4,size_x: 1,size_y: 1},
+        {col: 2,row: 5,size_x: 1,size_y: 1}
+      ];
+
       // tell Select2 to use the property id for the text
       function format(item) { return item.id; };
 
       $(document).ready(function() {
+        // sort serialization
+        serialization = Gridster.sort_by_row_and_col_asc(serialization);
+
+        gridster = $(".gridster ul").gridster({
+          widget_base_dimensions: [200, 200],
+          widget_margins: [5, 5]
+        }).data('gridster');
+
+        gridster.remove_all_widgets();
+        $.each(serialization, function() {
+          gridster.add_widget('<li />', this.size_x, this.size_y, this.col, this.row);
+        });
 
         // AJAX call to get all the customer keys (pre-prepared static JSON file)
         $.ajax({
