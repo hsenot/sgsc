@@ -27,6 +27,8 @@ ENDSQL;
 		//header("Content-Type: application/json");
 		// Required to cater for IE
 		header("Content-Type: text/html");
+		// Allow CORS
+		header("Access-Control-Allow-Origin: *");
 		echo rs2json($recordSet);
 	}
 	catch (Exception $e) {
