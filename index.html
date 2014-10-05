@@ -34,7 +34,7 @@
           font-size: 16px;
           font-family: 'Helvetica Neue', Arial, sans-serif;
           color: #444;
-          margin: 30px 40px;
+          margin: 30px 10px;
       }
 
       .controls {
@@ -85,10 +85,16 @@
       <input type='hidden' id="e1" style="width:300px;margin:10px;font-size:18px;"/>
     </div>
 
-    <div class="gridster">
+    <div id="myclientdetails">
+    </div>
+
+    <div id="myheatmap">
+    </div>
+
+    <!--div class="gridster">
         <ul>
         </ul>
-    </div>
+    </div-->
 
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -103,7 +109,7 @@
 
       // same object than generated with gridster.serialize() method
       var serialization = [
-        {col: 1,row: 1,size_x: 2,size_y: 2},
+        {col: 1,row: 1,size_x: 4,size_y: 2},
         {col: 3,row: 1,size_x: 1,size_y: 2},
         {col: 4,row: 1,size_x: 1,size_y: 1},
         {col: 2,row: 3,size_x: 3,size_y: 1},
@@ -117,6 +123,7 @@
       function format(item) { return item.id; };
 
       $(document).ready(function() {
+        /*
         // sort serialization
         serialization = Gridster.sort_by_row_and_col_asc(serialization);
 
@@ -127,8 +134,24 @@
 
         gridster.remove_all_widgets();
         $.each(serialization, function() {
-          gridster.add_widget('<li />', this.size_x, this.size_y, this.col, this.row);
+          var li_markup='<li />';
+          if (this.id)
+          {
+            li_markup = '<li id="'+this.id+'"/>';
+          }
+          gridster.add_widget(li_markup, this.size_x, this.size_y, this.col, this.row);
         });
+        */
+        var params = {
+          consumption: {
+            keyURL: "http://103.29.64.88/sgsc/ws/ws_get_interval_reading_by_customer_key.php",
+            keyClient: "customer_key",
+            keyConsumption: "k1"            
+          },
+          details: {
+            keyURL: "http://103.29.64.88/sgsc/ws/ws_get_details_by_customer_key.php"
+          }
+        };
 
         // AJAX call to get all the customer keys (pre-prepared static JSON file)
         $.ajax({
@@ -151,17 +174,29 @@
               formatResult: format
             }).on('change',function(val,added,removed){
               // Loading the data for customer_key in val.val
+              // Linking to a heatmap iframe with an appropriate URL
+              var myparamsCons = $.extend ({client_id: val.val}, params.consumption);
+
+              // We need to use decodeURIComponent because the URL should remain unencoded for the heatmap to use
+              var heatmap_iframe = $('<iframe>')
+                  .attr('src', 'heatmap/index.html?'+decodeURIComponent($.param(myparamsCons)))
+                  .attr('style','height:700px;width:100%;')
+                  .attr('frameBorder','0');
+
+              $('#myheatmap').empty()
+                          .css('padding',0).css('width','100%')
+                          .append(heatmap_iframe);
+
+              // Retrieving the details of this client
               $.ajax({
                 type: "GET",
-                data:{
-                  customer_key:val.val
-                },
-                url: "ws/ws_get_interval_reading_by_customer_key.php",
+                url: params.details.keyURL +"?"+ $.param({client_id: val.val}),
                 dataType: "json",
                 success: function(data) {
                   //processData(data);
+                  alert(data);
                 }
-              });              
+              });               
             });
           }
         }
