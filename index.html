@@ -171,20 +171,20 @@
           if (data)
           {
             $("#e1").select2({
+              minimumInputLength: 1,
               placeholder: "Type in a customer key",
-              ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
-                      url: params.filtering.keyURL,
-                      dataType: 'jsonp',
-                      data: function (term, page) {
-                          return {
-                              param1: term
-                          };
-                      },
-                      results: function (data, page) { // parse the results into the format expected by Select2.
-                          // since we are using custom formatting functions we do not need to alter remote JSON data
-                          return {results: data.rows};
-                      }
-                  }
+              ajax: {
+                url: params.filtering.keyURL,
+                dataType: 'jsonp',
+                data: function (term, page) {
+                  return {
+                    param1: term
+                  };
+                },
+                results: function (data, page) {
+                  return {results: data.rows};
+                }
+              },
               formatSelection: format,
               formatResult: format
             }).on('change',function(val,added,removed){
