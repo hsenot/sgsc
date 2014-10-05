@@ -143,6 +143,9 @@
         });
         */
         var params = {
+          filtering:{
+            keyURL: "http://103.29.64.88/sgsc/ws/ws_customers_by_params.php"
+          },
           consumption: {
             keyURL: "http://103.29.64.88/sgsc/ws/ws_get_interval_reading_by_customer_key.php",
             keyClient: "customer_key",
@@ -169,7 +172,19 @@
           {
             $("#e1").select2({
               placeholder: "Type in a customer key",
-              data: {results:data,text:'id'},
+              ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
+                      url: params.filtering.keyURL,
+                      dataType: 'jsonp',
+                      data: function (term, page) {
+                          return {
+                              param1: term
+                          };
+                      },
+                      results: function (data, page) { // parse the results into the format expected by Select2.
+                          // since we are using custom formatting functions we do not need to alter remote JSON data
+                          return {results: data.rows};
+                      }
+                  }
               formatSelection: format,
               formatResult: format
             }).on('change',function(val,added,removed){
@@ -190,11 +205,33 @@
               // Retrieving the details of this client
               $.ajax({
                 type: "GET",
-                url: params.details.keyURL +"?"+ $.param({client_id: val.val}),
+                url: params.details.keyURL +"?"+ $.param({customer_key: val.val}),
                 dataType: "json",
                 success: function(data) {
-                  //processData(data);
-                  alert(data);
+                  //alert(data);
+                  var details = data.rows[0];
+                  $('#myclientdetails').html(
+                    "<table class='table'>"+
+                    "<tr>"+
+                    "<td>Customer / Service Type: "+details.trial_customer_type+" / "+details.service_type+"</td>"+
+                    "<td>Control Group: "+details.control_group_flag+"</td>"+
+                    "<td>Location: "+details.suburb_name+" ("+details.postcode+")</td>"+
+                    "<td>Census: "+details.census_group_code+"</td>"+                    
+                    "</tr>"+
+                    "<tr>"+
+                    "<td>Loads: "+(details.general_supply_cnt=="1"?"General,":"")+(details.controlled_load_cnt=="1"?"Controlled,":"")+(details.net_solar_cnt=="1"?"Solar (net),":"")+(details.gross_solar_cnt=="1"?"Solar (gross),":"")+(details.other_load_cnt=="1"?"Other":"")+"</td>"+
+                    "<td>Dwelling (asserted): "+details.assrtd_dwelling_type_cd+(details.is_renting=="Y"?" (renting)":"")+"</td>"+
+                    "<td>Gas usage (asserted): "+details.assrtd_gas_usage_group_cd+"</td>"+
+                    "<td>Electricity usage (asserted): "+details.assrtd_electricity_use_grp_cd+"</td>"+                    
+                    "</tr>"+
+                    "<tr>"+
+                    "<td>Nb occupants: "+details.num_occupants+"</td>"+
+                    "<td>Gas? "+details.has_gas+"</td>"+
+                    "<td>Solar? "+details.has_solar+"</td>"+
+                    "<td>Air con? "+details.has_aircon+"</td>"+                    
+                    "</tr>"+
+                    "</table>"
+                  );
                 }
               });               
             });
