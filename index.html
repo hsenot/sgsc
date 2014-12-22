@@ -76,6 +76,10 @@
           border: none!important;
           background: red!important;
       }
+
+      .striked {
+        font-weight: bold;
+      }
     </style>
 
   </head>
@@ -105,7 +109,7 @@
     <!-- Gridster -->
     <script src="gridster.js/dist/jquery.gridster.js"></script>
     <script>
-      var gridster;
+      var gridster, params;
 
       // same object than generated with gridster.serialize() method
       var serialization = [
@@ -142,7 +146,7 @@
           gridster.add_widget(li_markup, this.size_x, this.size_y, this.col, this.row);
         });
         */
-        var params = {
+        params = {
           filtering:{
             keyURL: "http://103.29.64.88/sgsc/ws/ws_customers_by_params.php"
           },
@@ -165,6 +169,80 @@
             processData(data);
           }
         });
+
+        var refreshHeatmap = function(){
+          // We need to use decodeURIComponent because the URL should remain unencoded for the heatmap to use
+          var heatmap_iframe = $('<iframe>')
+              .attr('src', 'heatmap/index.html?'+decodeURIComponent($.param(params.consumption)))
+              .attr('style','height:700px;width:100%;')
+              .attr('frameBorder','0');
+
+          $('#myheatmap').empty()
+                      .css('padding',0).css('width','100%')
+                      .append(heatmap_iframe);
+        }
+
+        var refreshDetails = function(){
+          // Retrieving the details of this client
+          $.ajax({
+            type: "GET",
+            url: params.details.keyURL +"?"+ $.param({customer_key: params.consumption.client_id}),
+            dataType: "json",
+            success: function(data) {
+              //alert(data);
+              var details = data.rows[0];
+              $('#myclientdetails').html(
+                "<table class='table'>"+
+                "<tr>"+
+                "<td>Customer / Service Type: "+details.trial_customer_type+" / "+details.service_type+"</td>"+
+                "<td>Control Group: "+details.control_group_flag+"</td>"+
+                "<td>Location: "+details.suburb_name+" ("+details.postcode+")</td>"+
+                "<td>Census: "+details.census_group_code+"</td>"+                    
+                "</tr>"+
+                "<tr>"+
+                "<td>Loads: "+(details.general_supply_cnt=="1"?"<a href='#' class='clickable general striked'>General</a>, ":"")+(details.controlled_load_cnt=="1"?"<a href='#' class='clickable controlled'>Controlled</a>, ":"")+(details.net_solar_cnt=="1"?"<a href='#' class='clickable solar'>Solar (net)</a>, ":"")+(details.gross_solar_cnt=="1"?"<a href='#' class='clickable solar'>Solar (gross)</a>, ":"")+(details.other_load_cnt=="1"?"<a href='#' class='clickable other'>Other</a>":"")+"</td>"+
+                "<td>Dwelling (asserted): "+details.assrtd_dwelling_type_cd+(details.is_renting=="Y"?" (renting)":"")+"</td>"+
+                "<td>Gas usage (asserted): "+details.assrtd_gas_usage_group_cd+"</td>"+
+                "<td>Electricity usage (asserted): "+details.assrtd_electricity_use_grp_cd+"</td>"+                    
+                "</tr>"+
+                "<tr>"+
+                "<td>Nb occupants: "+details.num_occupants+"</td>"+
+                "<td>Gas? "+details.has_gas+"</td>"+
+                "<td>Solar? "+details.has_solar+"</td>"+
+                "<td>Air con? "+details.has_aircon+"</td>"+                    
+                "</tr>"+
+                "</table>"
+              );
+
+              // Catering for clicks on load type
+              $('.clickable').click(function(e){
+                console.log('Click');
+                $('.clickable').removeClass('striked');
+
+                if ($(e.target).hasClass('general'))
+                {
+                  params.consumption.keyConsumption = "k1";
+                }
+                if ($(e.target).hasClass('controlled'))
+                {
+                  params.consumption.keyConsumption = "k2";
+                }
+                if ($(e.target).hasClass('solar'))
+                {
+                  params.consumption.keyConsumption = "k3";
+                }
+                if ($(e.target).hasClass('other'))
+                {
+                  params.consumption.keyConsumption = "k4";
+                }
+
+                $(e.target).addClass('striked');
+                //
+                refreshHeatmap();
+              }); 
+            }
+          });
+        }
 
         // Processing the customer key array into the select2 drop down
         function processData(data) {
@@ -189,51 +267,9 @@
               formatResult: format
             }).on('change',function(val,added,removed){
               // Loading the data for customer_key in val.val
-              // Linking to a heatmap iframe with an appropriate URL
-              var myparamsCons = $.extend ({client_id: val.val}, params.consumption);
-
-              // We need to use decodeURIComponent because the URL should remain unencoded for the heatmap to use
-              var heatmap_iframe = $('<iframe>')
-                  .attr('src', 'heatmap/index.html?'+decodeURIComponent($.param(myparamsCons)))
-                  .attr('style','height:700px;width:100%;')
-                  .attr('frameBorder','0');
-
-              $('#myheatmap').empty()
-                          .css('padding',0).css('width','100%')
-                          .append(heatmap_iframe);
-
-              // Retrieving the details of this client
-              $.ajax({
-                type: "GET",
-                url: params.details.keyURL +"?"+ $.param({customer_key: val.val}),
-                dataType: "json",
-                success: function(data) {
-                  //alert(data);
-                  var details = data.rows[0];
-                  $('#myclientdetails').html(
-                    "<table class='table'>"+
-                    "<tr>"+
-                    "<td>Customer / Service Type: "+details.trial_customer_type+" / "+details.service_type+"</td>"+
-                    "<td>Control Group: "+details.control_group_flag+"</td>"+
-                    "<td>Location: "+details.suburb_name+" ("+details.postcode+")</td>"+
-                    "<td>Census: "+details.census_group_code+"</td>"+                    
-                    "</tr>"+
-                    "<tr>"+
-                    "<td>Loads: "+(details.general_supply_cnt=="1"?"General,":"")+(details.controlled_load_cnt=="1"?"Controlled,":"")+(details.net_solar_cnt=="1"?"Solar (net),":"")+(details.gross_solar_cnt=="1"?"Solar (gross),":"")+(details.other_load_cnt=="1"?"Other":"")+"</td>"+
-                    "<td>Dwelling (asserted): "+details.assrtd_dwelling_type_cd+(details.is_renting=="Y"?" (renting)":"")+"</td>"+
-                    "<td>Gas usage (asserted): "+details.assrtd_gas_usage_group_cd+"</td>"+
-                    "<td>Electricity usage (asserted): "+details.assrtd_electricity_use_grp_cd+"</td>"+                    
-                    "</tr>"+
-                    "<tr>"+
-                    "<td>Nb occupants: "+details.num_occupants+"</td>"+
-                    "<td>Gas? "+details.has_gas+"</td>"+
-                    "<td>Solar? "+details.has_solar+"</td>"+
-                    "<td>Air con? "+details.has_aircon+"</td>"+                    
-                    "</tr>"+
-                    "</table>"
-                  );
-                }
-              });               
+              params.consumption = $.extend (params.consumption, {client_id: val.val});
+              refreshDetails();
+              refreshHeatmap();
             });
           }
         }
