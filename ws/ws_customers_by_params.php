@@ -20,12 +20,10 @@
 select customer_key as id from
 trial_customer where customer_key in
 (
-select m.customer_key from interval_reading_mini m
+select distinct m.customer_key from customer_nb_days_not_null m
+where nb_day_k2>=$p_param2 and nb_day_k3>=$p_param3 and nb_day_k4>=$p_param4
 )
 and customer_key||'' like '%$p_param1%' 
-and controlled_load_cnt>=$p_param2 
-and (net_solar_cnt+gross_solar_cnt)>=$p_param3 
-and other_load_cnt>=$p_param4
 order by customer_key
 limit 50
 ENDSQL;
