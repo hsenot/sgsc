@@ -281,7 +281,7 @@
               formatResult: format
             }).on('change',function(val,added,removed){
               // Loading the data for customer_key in val.val
-              params.consumption = $.extend (params.consumption, {client_id: val.val});
+              params.consumption = $.extend (params.consumption, {client_id: val.val, keyConsumption: "k1"});
               refreshDetails();
               refreshHeatmap();
             });
