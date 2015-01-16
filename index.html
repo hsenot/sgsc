@@ -209,7 +209,7 @@
                 "<td>Census: "+details.census_group_code+"</td>"+                    
                 "</tr>"+
                 "<tr>"+
-                "<td>Loads: "+(details.nb_day_k1>="1"?"<a href='#' class='clickable general striked'>General</a>, ":"")+(details.nb_day_k2>="1"?"<a href='#' class='clickable controlled'>Controlled</a>, ":"")+(details.nb_day_k3>="1"?"<a href='#' class='clickable solar'>Solar</a>, ":"")+(details.nb_day_k4>="1"?"<a href='#' class='clickable other'>Other</a>":"")+"</td>"+
+                "<td>Loads: "+(details.nb_day_k1>="1"?"<a href='#' class='clickable general striked'>General ("+details.nb_day_k1+"d)</a>, ":"")+(details.nb_day_k2>="1"?"<a href='#' class='clickable controlled'>Controlled ("+details.nb_day_k2+"d)</a>, ":"")+(details.nb_day_k3>="1"?"<a href='#' class='clickable solar'>Solar ("+details.nb_day_k3+"d)</a>, ":"")+(details.nb_day_k4>="1"?"<a href='#' class='clickable other'>Other ("+details.nb_day_k4+"d)</a>":"")+"</td>"+
                 "<td>Dwelling (asserted): "+details.assrtd_dwelling_type_cd+(details.is_renting=="Y"?" (renting)":"")+"</td>"+
                 "<td>Gas usage (asserted): "+details.assrtd_gas_usage_group_cd+"</td>"+
                 "<td>Electricity usage (asserted): "+details.assrtd_electricity_use_grp_cd+"</td>"+                    
