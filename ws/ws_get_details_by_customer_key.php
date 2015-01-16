@@ -14,7 +14,7 @@
 		$p_customer_key = $_REQUEST['customer_key'];
 
 		$sql = <<<ENDSQL
-	SELECT * FROM trial_customer WHERE customer_key=$p_customer_key LIMIT 1
+	SELECT tc.*,cnd.nb_day_k1,cnd.nb_day_k2,cnd.nb_day_k3,cnd.nb_day_k4 FROM trial_customer tc,customer_nb_days_not_null cnd WHERE tc.customer_key=$p_customer_key AND cnd.customer_key=tc.customer_key LIMIT 1
 ENDSQL;
 
 		//echo $sql;
