@@ -101,14 +101,14 @@ ENDSQL;
 			$sql2 = <<<ENDSQL
 			delete from customer_metric where customer_key=$p_customer_key and metric_key='Solar payback for a $system_sizekW system (years)';
 ENDSQL;
-			echo $sql2;
+			//echo $sql2;
     		$recordSet2 = $pgconn->prepare($sql2);
     		$recordSet2->execute();
 
 			$sql3 = <<<ENDSQL
 			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'Solar payback for a $system_sizekW system (years)',''||$payback);
 ENDSQL;
-			echo $sql3;
+			//echo $sql3;
     		$recordSet3 = $pgconn->prepare($sql3);
     		$recordSet3->execute();
 
