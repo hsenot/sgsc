@@ -99,14 +99,14 @@ ENDSQL;
 			$line_arr = array("system_size_kw"=>$system_size,"total_demand_kwh"=>$total_demand,"total_supply_by_pv_kwh"=>$total_supply,"total_self_consumption_kwh"=>$total_self_consumption,"benefit_avoided_cost_aud"=>$benefit_avoided_cost,"total_exports_kwh"=>$total_exports,"benefit_fit_aud"=>$benefit_fit,"self_to_demand_ratio"=>$self_to_demand_ratio,"simple_payback_yr"=>$payback);
 			// Persist that in the database too
 			$sql2 = <<<ENDSQL
-			delete from customer_metric where customer_key=$p_customer_key and metric_key='Solar payback for a $system_sizekW system (years)';
+			delete from customer_metric where customer_key=$p_customer_key and metric_key='Solar payback for a $system_size kW system (years)';
 ENDSQL;
 			//echo $sql2;
     		$recordSet2 = $pgconn->prepare($sql2);
     		$recordSet2->execute();
 
 			$sql3 = <<<ENDSQL
-			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'Solar payback for a $system_sizekW system (years)',''||$payback);
+			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'Solar payback for a $system_size kW system (years)',''||$payback);
 ENDSQL;
 			//echo $sql3;
     		$recordSet3 = $pgconn->prepare($sql3);
