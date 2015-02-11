@@ -14,7 +14,8 @@
 		$p_customer_key = $_REQUEST['customer_key'];
 		$p_derate = 0.85;
 		$p_cost_kwh_from_grid = 0.30;
-		$p_feed_in_tarrif = 0.06;
+		$p_feed_in_tariff = 0.06;
+		$p_capital_cost_per_w = array(1=>1.43,1.5=>1.43,2=>1.65,2.5=>1.49,3=>1.33,3.5=>1.30,4=>1.26,4.5=>1.26,5=>1.26,5.5=>1.24,6=>1.22,6.5=>1.20,7=>1.18,7.5=>1.16,8=>1.14,8.5=>1.12,9=>1.10,9.5=>1.08,10=>1.04);
 
 		$sql = <<<ENDSQL
 select 
@@ -43,7 +44,7 @@ coalesce(round(sys_size.x*(s.n_w*$p_derate/1000/2),4),0.0) as supply_pv_system_k
 from 
 	(select day,prd,kwh1 as kwh from interval_reading_mini where customer_key=$p_customer_key order by day desc limit 365*48) c
 	 left outer join solar_melbourne_opti s	on c.day%365=s.day and c.prd=s.prd,
-	(select round(generate_series(2,20)/2.0,1) as x) sys_size
+	(select round(generate_series(3,10)/2.0,1) as x) sys_size
 ) t
 order by 1,2
 ) s
@@ -63,7 +64,42 @@ ENDSQL;
 		header("Content-Type: text/html");
 		// Allow CORS
 		header("Access-Control-Allow-Origin: *");
-		echo rs2json($recordSet);
+
+		//echo rs2json($recordSet);
+
+		$result = array();
+		while ($row  = $recordSet->fetch(PDO::FETCH_ASSOC))
+		{
+			foreach ($row as $key => $val)
+			{
+				if ($key=="total_self_consumption") {
+					$benefit_avoided_cost = (float)trim($val) * $p_cost_kwh_from_grid;
+					$total_self_consumption = (float)trim($val);
+				}
+				if ($key=="total_exports") {
+					$benefit_fit = (float)trim($val) * $p_feed_in_tariff;
+					$total_exports = (float)trim($val);
+				}
+				if ($key=="system_size_kw") {
+                                        $system_size = (float)trim($val);
+                                }
+				if ($key=="self_to_demand_ratio") {
+                                        $self_to_demand_ratio = (float)trim($val);
+                                }
+				if ($key=="total_demand") {
+                                        $total_demand = (float)trim($val);
+                                }
+				if ($key=="total_supply_pv_system_kwh") {
+                                        $total_supply = (float)trim($val);
+                                }
+			}
+			// Calculating payback period
+			$payback = ($p_capital_cost_per_w[$system_size]*$system_size*1000)/($benefit_avoided_cost+$benefit_fit);
+			// Now doing something with this line
+			$line_arr = array("system_size_kw"=>$system_size,"total_demand_kwh"=>$total_demand,"total_supply_by_pv_kwh"=>$total_supply,"total_self_consumption_kwh"=>$total_self_consumption,"benefit_avoided_cost_aud"=>$benefit_avoided_cost,"total_exports_kwh"=>$total_exports,"benefit_fit_aud"=>$benefit_fit,"self_to_demand_ratio"=>$self_to_demand_ratio,"simple_payback_yr"=>$payback);
+			$result[] = $line_arr;
+		}
+		echo json_encode($result);
 	}
 	catch (Exception $e) {
 		trigger_error("Caught Exception: " . $e->getMessage(), E_USER_ERROR);
