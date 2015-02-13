@@ -8,6 +8,7 @@
 	require_once("inc/database.inc.php");
 	require_once("inc/security.inc.php");
 	require_once("inc/json.pdo.inc.php");
+	require_once('financial/financial_class.php'); 
 
 	# Performs the query and returns XML or JSON
 	try {
@@ -20,49 +21,90 @@
 		$npv_period_years = 25;
 		$npv_interest_rate = 0.05;
 
-		//header("Content-Type: application/json");
 		// Required to cater for IE
 		header("Content-Type: text/html");
 		// Allow CORS
 		header("Access-Control-Allow-Origin: *");
 
 		// The json file returned from the solar output service
+		// Assumption: it's at the /sgsc endpoint on the server
 		$recordSet = json_decode(file_get_contents('http://'.$_SERVER['HTTP_HOST'].'/sgsc/ws/ws_solar_output_by_customer_key.php?customer_key='.$p_customer_key));
-		//var_dump($recordSet); 
 
-		//echo $sql;
 		$pgconn = pgConnection();
 
 		$result = array();
 		foreach($recordSet->rows as $row)
 		{
-			//var_dump($row);
+			// Variables for financial calculations
+			$system_size = (float)trim($row->system_size_kw);
+			$capital_cost = $p_capital_cost_per_w[$system_size]*$system_size*1000;
 			$benefit_avoided_cost = (float)trim($row->total_self_consumption) * $p_cost_kwh_from_grid;
 			$benefit_fit = (float)trim($row->total_exports) * $p_feed_in_tariff;
-			$system_size = (float)trim($row->system_size_kw);
+			$benefits = $benefit_avoided_cost + $benefit_fit;
+			
+			// Simple payback section
+			$payback = $capital_cost/$benefits;
 
-			// Calculating payback period
-			$payback = ($p_capital_cost_per_w[$system_size]*$system_size*1000)/($benefit_avoided_cost+$benefit_fit);
-
-			// Persist that in the database too
+			// Persist that in the database
 			$sql2 = <<<ENDSQL
 			delete from customer_metric where customer_key=$p_customer_key and metric_key='Solar payback for a $system_size kW system (years)';
 ENDSQL;
-			//echo $sql2;
 			$recordSet2 = $pgconn->prepare($sql2);
 			$recordSet2->execute();
 
 			$sql3 = <<<ENDSQL
 			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'Solar payback for a $system_size kW system (years)',''||$payback);
 ENDSQL;
-			//echo $sql3;
 			$recordSet3 = $pgconn->prepare($sql3);
 			$recordSet3->execute();
 
-			// TODO: calculate NPV, IRR
+			// Cashflow array: capital cost (negative) followed by benefits (positives)
+			$cashflow = array();
+			$cashflow[] = $capital_cost * (-1.0);
+			// Adding the cashflow over the period considered
+			for ($x = 0; $x < $npv_period_years; $x++) {
+				$cashflow[]=$benefits;
+			} 
+
+			// Financial class instantiation
+			$f = new Financial;
+
+			// IRR section
+			$irr = $f->IRR($cashflow)*100;
+
+			// Persist that in the database
+			$sql2 = <<<ENDSQL
+			delete from customer_metric where customer_key=$p_customer_key and metric_key='IRR for a $system_size kW system over $npv_period_years years (percent)';
+ENDSQL;
+			$recordSet2 = $pgconn->prepare($sql2);
+			$recordSet2->execute();
+
+			$sql3 = <<<ENDSQL
+			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'IRR for a $system_size kW system over $npv_period_years years (percent)',''||$irr);
+ENDSQL;
+			$recordSet3 = $pgconn->prepare($sql3);
+			$recordSet3->execute();
+
+
+			// NPV section
+			$npv = $f->NPV($npv_interest_rate,$cashflow);
+
+			// Persist that in the database
+			$sql2 = <<<ENDSQL
+			delete from customer_metric where customer_key=$p_customer_key and metric_key='NPV for a $system_size kW system over $npv_period_years years at $npv_interest_rate (AUD)';
+ENDSQL;
+			$recordSet2 = $pgconn->prepare($sql2);
+			$recordSet2->execute();
+
+			$sql3 = <<<ENDSQL
+			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'NPV for a $system_size kW system over $npv_period_years years at $npv_interest_rate (AUD)',''||$npv);
+ENDSQL;
+			$recordSet3 = $pgconn->prepare($sql3);
+			$recordSet3->execute();
+
 
 			// Adding that to the array of metrics to be returned
-			$line_arr = array("system_size_kw"=>$system_size,"benefit_avoided_cost_aud"=>$benefit_avoided_cost,"benefit_fit_aud"=>$benefit_fit,"simple_payback_yr"=>$payback);
+			$line_arr = array("system_size_kw"=>$system_size,"benefit_avoided_cost_aud"=>round($benefit_avoided_cost),"benefit_fit_aud"=>round($benefit_fit),"simple_payback_yr"=>round($payback,1),"irr_over_".$npv_period_years."_years_pct"=>round($irr,2),"npv_over_".$npv_period_years."_years_aud"=>round($npv));
 
 			$result[] = $line_arr;
 		}

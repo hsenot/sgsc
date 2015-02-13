@@ -4,6 +4,7 @@
  * Returns error some error information to the user and, if provided, sends detailed
  * error information to a service administrator.
  */
+date_default_timezone_set('Australia/Melbourne');
 
 # Set level at which to trap errors, error handler, and script execution time limit.
 //error_reporting(E_ALL & E_NOTICE);
