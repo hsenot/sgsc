@@ -41,7 +41,7 @@ sys_size.x as system_size_kw,
 coalesce(round(sys_size.x*(s.n_w*$p_derate/1000/2),4),0.0) as supply_pv_system_kwh
 from 
 	(select day,prd,kwh1 as kwh from interval_reading_mini where customer_key=$p_customer_key order by day desc limit 365*48) c
-	 left outer join solar_melbourne_opti s	on c.day%365=s.day and c.prd=s.prd,
+	 left outer join solar_sydney_opti s on c.day%365=s.day and c.prd=s.prd,
 	(select round(generate_series(3,10)/2.0,1) as x) sys_size
 ) t
 order by 1,2
