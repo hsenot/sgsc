@@ -13,6 +13,16 @@
 	# Performs the query and returns XML or JSON
 	try {
 		$p_customer_key = $_REQUEST['customer_key'];
+		$p_offset = 0;
+		if (isset($_REQUEST['offset']))
+		{
+			$p_offset=$_REQUEST['offset'];
+		}
+		$p_orientation = 'n';
+		if (isset($_REQUEST['orientation']))
+		{
+			$p_orientation=$_REQUEST['orientation'];
+		}
 
 		// Parameters in solar financial calculations
 		$p_cost_kwh_from_grid = 0.30;
@@ -28,7 +38,7 @@
 
 		// The json file returned from the solar output service
 		// Assumption: it's at the /sgsc endpoint on the server
-		$recordSet = json_decode(file_get_contents('http://'.$_SERVER['HTTP_HOST'].'/sgsc/ws/ws_solar_output_by_customer_key.php?customer_key='.$p_customer_key));
+		$recordSet = json_decode(file_get_contents('http://'.$_SERVER['HTTP_HOST'].'/sgsc/ws/ws_solar_output_by_customer_key.php?customer_key='.$p_customer_key.'&offset='.$p_offset.'&orientation='.$p_orientation));
 
 		$pgconn = pgConnection();
 
@@ -47,13 +57,13 @@
 
 			// Persist that in the database
 			$sql2 = <<<ENDSQL
-			delete from customer_metric where customer_key=$p_customer_key and metric_key='Solar payback for a $system_size kW system (years)';
+			delete from customer_metric where customer_key=$p_customer_key and metric_key='Payback ({$system_size}kW/{$p_orientation}/{$p_offset}) (years)';
 ENDSQL;
 			$recordSet2 = $pgconn->prepare($sql2);
 			$recordSet2->execute();
 
 			$sql3 = <<<ENDSQL
-			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'Solar payback for a $system_size kW system (years)',''||$payback);
+			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'Payback ({$system_size}kW/{$p_orientation}/{$p_offset}) (years)',''||$payback);
 ENDSQL;
 			$recordSet3 = $pgconn->prepare($sql3);
 			$recordSet3->execute();
@@ -74,13 +84,13 @@ ENDSQL;
 
 			// Persist that in the database
 			$sql2 = <<<ENDSQL
-			delete from customer_metric where customer_key=$p_customer_key and metric_key='IRR for a $system_size kW system over $npv_period_years years (percent)';
+			delete from customer_metric where customer_key=$p_customer_key and metric_key='IRR over {$npv_period_years} years ({$system_size}kW/{$p_orientation}/{$p_offset}) (percent)';
 ENDSQL;
 			$recordSet2 = $pgconn->prepare($sql2);
 			$recordSet2->execute();
 
 			$sql3 = <<<ENDSQL
-			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'IRR for a $system_size kW system over $npv_period_years years (percent)',''||$irr);
+			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'IRR over {$npv_period_years} years ({$system_size}kW/{$p_orientation}/{$p_offset}) (percent)',''||$irr);
 ENDSQL;
 			$recordSet3 = $pgconn->prepare($sql3);
 			$recordSet3->execute();
@@ -91,13 +101,13 @@ ENDSQL;
 
 			// Persist that in the database
 			$sql2 = <<<ENDSQL
-			delete from customer_metric where customer_key=$p_customer_key and metric_key='NPV for a $system_size kW system over $npv_period_years years at $npv_interest_rate (AUD)';
+			delete from customer_metric where customer_key=$p_customer_key and metric_key='NPV over {$npv_period_years} years at $npv_interest_rate ({$system_size}kW/{$p_orientation}/{$p_offset}) (AUD)';
 ENDSQL;
 			$recordSet2 = $pgconn->prepare($sql2);
 			$recordSet2->execute();
 
 			$sql3 = <<<ENDSQL
-			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'NPV for a $system_size kW system over $npv_period_years years at $npv_interest_rate (AUD)',''||$npv);
+			insert into customer_metric (customer_key,metric_key,metric_value) values ($p_customer_key,'NPV over {$npv_period_years} years at $npv_interest_rate ({$system_size}kW/{$p_orientation}/{$p_offset}) (AUD)',''||$npv);
 ENDSQL;
 			$recordSet3 = $pgconn->prepare($sql3);
 			$recordSet3->execute();
