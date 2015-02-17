@@ -13,41 +13,44 @@
 	try {
 		$p_customer_key = $_REQUEST['customer_key'];
 		$p_derate = 0.85;
+		$p_offsetamplitude = 0;
 		// TODO: introduce parameterised angle
 
 		$sql = <<<ENDSQL
-select 
-system_size_kw,
-sum(supply_pv_system_kwh) as total_supply_pv_system_kwh,
-max(supply_pv_system_kwh) as max_supply_30mn_kwh,
-max(demand_kwh) as max_demand_30mn,
-sum(balance_30mn_kwh) as net_balance,
-sum(demand_kwh) as total_demand,
-sum(case when balance_30mn_kwh<0 then -balance_30mn_kwh else 0 end) as total_imports,
-sum(case when balance_30mn_kwh>0 then demand_kwh else supply_pv_system_kwh end) as total_self_consumption,
-sum(case when balance_30mn_kwh>0 then balance_30mn_kwh else 0 end) as total_exports,
-round(cast(sum(case when balance_30mn_kwh>0 then demand_kwh else supply_pv_system_kwh end)/sum(demand_kwh)*100 as numeric),2) as self_to_demand_ratio
-from
-(
-select *,
-round(cast(supply_pv_system_kwh-demand_kwh as numeric),4) as balance_30mn_kwh
-from
-(
-select 
-c.day as d,
-c.prd as p,
-c.kwh as demand_kwh,
-sys_size.x as system_size_kw,
-coalesce(round(sys_size.x*(s.n_w*$p_derate/1000/2),4),0.0) as supply_pv_system_kwh
-from 
-	(select day,prd,kwh1 as kwh from interval_reading_mini where customer_key=$p_customer_key order by day desc limit 365*48) c
-	 left outer join solar_sydney_opti s on c.day%365=s.day and c.prd=s.prd,
-	(select round(generate_series(3,10)/2.0,1) as x) sys_size
-) t
-order by 1,2
-) s
-group by system_size_kw
-order by system_size_kw
+SELECT   system_size_kw, 
+         SUM(supply_pv_system_kwh) AS total_supply_pv_system_kwh, 
+         Max(supply_pv_system_kwh) AS max_supply_30mn_kwh, 
+         Max(demand_kwh)           AS max_demand_30mn, 
+         SUM(balance_30mn_kwh)     AS net_balance, 
+         SUM(demand_kwh)           AS total_demand, 
+         SUM(CASE WHEN balance_30mn_kwh<0 THEN -balance_30mn_kwh ELSE 0 END) AS total_imports, 
+         SUM(CASE WHEN balance_30mn_kwh>0 THEN demand_kwh ELSE supply_pv_system_kwh END) AS total_self_consumption, 
+         SUM( CASE WHEN balance_30mn_kwh>0 THEN balance_30mn_kwh ELSE 0 END) AS total_exports, 
+         Round(Cast(SUM(CASE WHEN balance_30mn_kwh>0 THEN demand_kwh ELSE supply_pv_system_kwh END)/SUM(demand_kwh)*100 AS NUMERIC),2) AS self_to_demand_ratio 
+FROM     ( 
+          SELECT   *, 
+                   Round(Cast(supply_pv_system_kwh-demand_kwh AS NUMERIC),4) AS balance_30mn_kwh 
+          FROM     ( 
+                                   SELECT          s.day                                                 AS d,
+                                                   s.prd                                                 AS p,
+                                                   avg(c.kwh)                                            AS demand_kwh,
+                                                   sys_size.x                                            AS system_size_kw,
+                                                   avg(Coalesce(Round(sys_size.x*(s.n_w*$p_derate/1000/2),4),0.0)) AS supply_pv_system_kwh 
+                                   FROM            ( 
+                                                            SELECT   day, 
+                                                                     prd, 
+                                                                     kwh1 AS kwh 
+                                                            FROM     interval_reading_mini
+                                                            WHERE    customer_key=$p_customer_key
+                                                            ORDER BY day DESC limit 365*48) c
+                                   LEFT OUTER JOIN (SELECT (day+y+365)%365 as day,prd,n_w,nw_w,w_w,y as day_offset FROM solar_sydney_opti so,generate_series(-$p_offsetamplitude,$p_offsetamplitude) AS y)s 
+                                   ON c.day%365=s.day AND c.prd=s.prd,(SELECT round(generate_series(3,10)/2.0,1) AS x) sys_size 
+                                   GROUP BY 1,2,4
+          ) t
+          ORDER BY 1, 2 
+) s 
+GROUP BY system_size_kw 
+ORDER BY system_size_kw
 ENDSQL;
 
 		//echo $sql;
