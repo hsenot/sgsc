@@ -39,9 +39,10 @@
 		{
 			// Variables for financial calculations
 			$system_size = (float)trim($row->system_size_kw);
-			$self_to_demand_ratio = (float)trim($row->self_to_demand_ratio);
+			$total_demand = (float)trim($row->total_demand);
 			$total_supply_pv_system_kwh = (float)trim($row->total_supply_pv_system_kwh);
 			$total_self_consumption = (float)trim($row->total_self_consumption);
+			$self_to_demand_ratio = $total_self_consumption / $total_demand * 100;
 			$self_to_supply_ratio = $total_self_consumption / $total_supply_pv_system_kwh * 100;
 			$total_exports = (float)trim($row->total_exports);
 
