@@ -26,7 +26,6 @@
 
 		$sql = <<<ENDSQL
 SELECT   system_size_kw,
-		 {$p_offset} as day_offset,
          SUM(supply_pv_system_kwh) AS total_supply_pv_system_kwh, 
          Max(supply_pv_system_kwh) AS max_supply_30mn_kwh, 
          Max(demand_kwh)           AS max_demand_30mn, 
