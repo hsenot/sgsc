@@ -44,7 +44,7 @@ FROM     (
 			FROM ( 
 				SELECT 	day%365 as day, 
 						prd, 
-						wh1/100 AS kwh 
+						wh1::float/100 AS kwh 
 				FROM interval_reading_mini
 				WHERE customer_key={$p_customer_key}
 				ORDER BY day DESC limit 365*48) c
