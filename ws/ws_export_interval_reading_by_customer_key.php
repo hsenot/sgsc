@@ -21,7 +21,7 @@ try {
 	(select max(day)::integer from interval_reading_mini where customer_key=$p_customer_key)
 	) as d) dates, (select * from generate_series(1,48) as p) periods) all_d_p
 	LEFT JOIN
-	(select day as d,prd as p,wh1/100 as k1,wh2/100 as k2,wh3/100 as k3,wh4/100 as k4 from interval_reading_mini where customer_key=$p_customer_key) t
+	(select day as d,prd as p,wh1::float/100 as k1,wh2::float/100 as k2,wh3::float/100 as k3,wh4::float/100 as k4 from interval_reading_mini where customer_key=$p_customer_key) t
 	ON all_d_p.d=t.d and all_d_p.p=t.p ORDER BY 1,2
 ENDSQL;
 
